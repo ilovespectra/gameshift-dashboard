@@ -12,9 +12,9 @@ export const AppBar: FC = props => {
     <div>
 
       {/* NavBar / Header */}
-      <div className="navbar flex flex-row md:mb-2 shadow-lg bg-neutral text-neutral-content lowercase">
-        <div className="navbar-start lowercase">
-          <label htmlFor="my-drawer" className="btn btn-square btn-ghost lowercase">
+      <div className="navbar flex flex-row md:mb-2 shadow-lg bg-neutral text-neutral-content">
+        <div className="navbar-start">
+          <label htmlFor="my-drawer" className="btn btn-square btn-ghost">
 
             <svg className="inline-block w-6 h-6 stroke-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -22,7 +22,7 @@ export const AppBar: FC = props => {
           </label>
 
           <div className="hidden sm:inline w-22 h-22 md:p-2">
-          <Image src="/solologo.png" alt="Logo" width={125} height={50} />
+          <Image src="/logo.png" alt="Logo" width={125} height={70} />
         </div>
         </div>
 
@@ -40,7 +40,7 @@ export const AppBar: FC = props => {
 
         {/* Wallet & Settings */}
         <div className="navbar-end">
-          <WalletMultiButton className="btn btn-ghost mr-4 lowercase" />
+          <WalletMultiButton className="btn btn-ghost mr-4" />
 
           <div className="dropdown dropdown-end">
             <div tabIndex={0} className="btn btn-square btn-ghost text-right">
