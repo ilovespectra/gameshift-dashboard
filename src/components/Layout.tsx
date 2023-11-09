@@ -1,53 +1,226 @@
-import { FC, ReactNode, useState } from "react";
-import pkg from '../../package.json';
-import { Heading } from "./Heading";
-import { RequestAirdrop } from "./RequestAirdrop";
-import { WalletSolBalance } from "./WalletSolBalance";
-import { LogIn } from "./LogIn";
-import { useWallet } from '@solana/wallet-adapter-react';
-import Home from './Home';
-import Am from './Am';
-import Pm from './Pm';
-import Freewrite from "./Freewrite";
-import ViewEntries from './ViewEntries'; // Import the ViewEntries component
+import { FC, ReactNode, useState, useCallback, useEffect } from "react";
+import { initializeApp } from "firebase/app";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { notify } from "../utils/notifications";
+import axios from "axios";
+import logToFirebase from "../components/logToFirebase";
+import { checkIfPublicKeyExistsInFirebase } from "./checkIfPublicKeyExistsInFirebase";
+import { getUsernameForPublicKey } from "./getUsernameForPublicKey";
 
-export const Layout: FC = ({ children }) => {
+const Layout = ({ children }) => {
   const { publicKey } = useWallet();
+  const isWalletConnected = !!publicKey;
 
-  // State variable to track which component to display
-  const [activeComponent, setActiveComponent] = useState<'home' | 'am' | 'pm' | 'freewrite' | 'viewEntries'>('home');
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
 
-  const handleComponentChange = (component: 'home' | 'am' | 'pm' | 'freewrite' | 'viewEntries') => {
-    setActiveComponent(component);
+  // Fetch the username only if wallet is connected and registered
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (isWalletConnected && isRegistered) {
+        // Check if the public key is registered and retrieve the associated username
+        const fetchedUsername = await getUsernameForPublicKey(publicKey.toBase58());
+    
+        if (fetchedUsername) {
+          setUsername(fetchedUsername);
+        }
+      }
+    };
+
+    fetchUsername();
+  }, [isWalletConnected, isRegistered, publicKey]);
+
+  useEffect(() => {
+    const checkRegistration = async () => {
+      if (isWalletConnected) {
+        // Check if the publicKey exists in Firebase
+        const publicKeyExistsInFirebase = await checkIfPublicKeyExistsInFirebase(publicKey.toBase58());
+
+        if (publicKeyExistsInFirebase) {
+          // If the public key is registered, set isRegistered to true
+          setIsRegistered(true);
+
+          // Fetch the username associated with the publicKey from Firebase
+          const fetchedUsername = await getUsernameForPublicKey(publicKey.toBase58());
+          
+          if (fetchedUsername) {
+            setUsername(fetchedUsername);
+          }
+        } else {
+          // If the public key is not registered, set isRegistered to false
+          setIsRegistered(false);
+        }
+      }
+    };
+
+    checkRegistration();
+  }, [isWalletConnected, publicKey]);
+
+  const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUsername(event.target.value);
+  };
+
+  const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(event.target.value);
+  };
+
+  const firebaseConfig = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  };
+
+  const app = initializeApp(firebaseConfig);
+
+  const onClick = useCallback(async () => {
+    if (!isWalletConnected) {
+      console.error("Wallet not connected!");
+      notify({
+        type: "error",
+        message: "Error",
+        description: "Wallet not connected!",
+      });
+      return;
+    }
+  }, [isWalletConnected]);
+
+  const handleRegistration = async () => {
+    if (!isWalletConnected) {
+      console.error("Wallet not connected!");
+      notify({
+        type: "error",
+        message: "Error",
+        description: "Wallet not connected!",
+      });
+      return;
+    }
+  
+    // Prepare the request data
+    const requestData = {
+      referenceId: username,
+      email,
+    };
+  
+    try {
+      const response = await axios.post("https://api.gameshift.dev/users", requestData, {
+        headers: {
+          "X-Api-Key": process.env.NEXT_PUBLIC_GAMESHIFT_API_KEY,
+        },
+      });
+  
+      if (response.status === 201) {
+        console.log("Registration successful");
+        console.log("Registered data:", response.data);
+  
+        // Pass the individual values to the logToFirebase function
+        logToFirebase(response.data.referenceId, response.data.email, publicKey?.toBase58(), response.data);
+        
+        // Update isRegistered to true after successful registration
+        setIsRegistered(true);
+  
+        // Update the username state
+        setUsername(response.data.referenceId);
+      } else {
+        console.error("Registration failed with status:", response.status);
+        notify({
+          type: "error",
+          message: "Error",
+          description: "Registration failed with status: " + response.status,
+        });
+      }
+    } catch (error) {
+      console.error("Error registering user:", error);
+      notify({
+        type: "error",
+        message: "Error",
+        description: "Error registering user.",
+      });
+    }
+  };
+  
+
+  const handleComponentChange = (component: string) => {
+    // Implement the logic to change the active component based on the "component" parameter
+    // For example, set the activeComponent state.
   };
 
   return (
     <div className="md:hero mx-auto p-4">
       <div className="md:hero-content flex flex-col">
-        {/* <Heading>
-          solo:<span className='text-sm font-normal align-top text-slate-700'></span>
-        </Heading> */}
         <h4 className="md:w-full text-center text-slate-300 my-2">
-          <p><i>a secret journal</i></p>
+          <h1>Gameshift Dashboard</h1>
         </h4>
 
-        <div className="text-center">
-          {/* Display the buttons */}
-          <button onClick={() => handleComponentChange('am')} className="group w-30 m-2 btn disabled:animate-none lowercase">Am Entry</button>
-          <button onClick={() => handleComponentChange('pm')} className="group w-30 m-2 btn disabled:animate-none lowercase">Pm Entry</button>
-          <button onClick={() => handleComponentChange('freewrite')} className="group w-30 m-2 btn disabled:animate-none lowercase">Freewrite</button>
-          <button onClick={() => handleComponentChange('viewEntries')} className="group w-30 m-2 btn disabled:animate-none lowercase">View Entries</button>
-          
-          {publicKey && (
-            <>
-              {activeComponent === 'am' && <Am />}
-              {activeComponent === 'pm' && <Pm />}
-              {activeComponent === 'freewrite' && <Freewrite />}
-              {activeComponent === 'viewEntries' && <ViewEntries />}
-            </>
-          )}
+        <div>
+        {isWalletConnected ? (
+          isRegistered ? (
+            <div>
+              <p>
+                <i>Welcome, {username}!</i>
+              </p>
+              <p>Connected with "{publicKey?.toBase58().substring(0, 5)}..."</p>
+            </div>
+          ) : (
+            <div className="registrationForm">
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={handleUsernameChange}
+                autoComplete="off" // Disable auto-fill
+              />
+              <input
+                type="text"
+                placeholder="Email"
+                value={email}
+                onChange={handleEmailChange}
+                autoComplete="off" // Disable auto-fill
+              />
+              <button onClick={handleRegistration}>Register</button>
+            </div>
+          )
+        ) : (
+          null // If the wallet is not connected, display nothing (no buttons)
+        )}
+      </div>
+
+        {isWalletConnected && isRegistered && (
+          <div className="text-center">
+          <button
+            onClick={() => handleComponentChange("asset")}
+            className="group w-30 m-2 btn disabled:animate-none"
+          >
+            Create Asset
+          </button>
+          <button
+            onClick={() => handleComponentChange("transfer")}
+            className="group w-30 m-2 btn disabled:animate-none"
+          >
+            Transfer Asset
+          </button>
+          <button
+            onClick={() => handleComponentChange("payment")}
+            className="group w-30 m-2 btn disabled:animate-none"
+          >
+            Payment
+          </button>
+          <button
+            onClick={() => handleComponentChange("view")}
+            className="group w-30 m-2 btn disabled:animate-none"
+          >
+            View Inventory
+          </button>
         </div>
+        )}
       </div>
     </div>
   );
-}
+};
+
+
+export default Layout;
