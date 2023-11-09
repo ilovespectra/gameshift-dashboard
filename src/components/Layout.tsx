@@ -163,7 +163,7 @@ const Layout = ({ children }) => {
               <p>
                 <i>Welcome, {username}!</i>
               </p>
-              <p>Connected with $quot;{publicKey?.toBase58().substring(0, 5)}...$quot;</p>
+              <p>Connected with <i>{publicKey?.toBase58().substring(0, 5)}...</i></p>
             </div>
           ) : (
             <div className="registrationForm">
