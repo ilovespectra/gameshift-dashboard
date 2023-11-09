@@ -6,24 +6,19 @@ html,
 body {
   padding: 0;
   margin: 0;
-  font-family: 'Courier New', Courier, monospace;
-  text-transform: lowercase;
 }
 
 h1 {
-  font-family: 'Courier New', Courier, monospace;
   font-size: larger;
   font-weight: bolder;
   margin-top: 20px;
   margin-bottom: 20px;
-  text-transform: lowercase;
 }
 
 .dateFilter,
 .typeFilter {
   background-color: #ffffff; /* Dark grey background */
   color: #333; /* White text color */
-  font-family: 'Courier New', Courier, monospace;
   width: 40vw;
   height: 2em; /* Reduced height to make it compact */
   padding: 0.5em;
@@ -33,11 +28,9 @@ h1 {
   resize: none;
   box-sizing: border-box;
   margin-bottom: 1em;
-  text-transform: lowercase;
 }
 
-.solologo {
-  font-family: 'Courier New', Courier, monospace;
+.logo {
   font-size: 55px;
   font-weight: bolder;
   margin-top: 20px;
@@ -52,15 +45,17 @@ a {
   box-sizing: border-box;
 }
 
+.entryField {
+  background-color: #e6e6e6;
+}
+
 /* example: override wallet button style */
 .wallet-adapter-button:not([disabled]):hover {
   background-color: #707070;
-  text-transform: lowercase;
 }
 
 .input-label {
   color: white;
-  font-family: 'Courier New', Courier, monospace;
   width: 40vw;
   height: 9em;
   padding: 0.5em;
@@ -68,13 +63,11 @@ a {
   resize: none;
   box-sizing: border-box;
   margin-bottom: 1em;
-  text-transform: lowercase;
 }
 
 .text-input {
   background-color: #333;
-  color: white; /* Added color property */
-  font-family: 'Courier New', Courier, monospace;
+  color: white;
   width: 40vw;
   height: 9em;
   padding: 0.5em;
@@ -82,5 +75,19 @@ a {
   resize: none;
   box-sizing: border-box;
   margin-bottom: 1em;
-  text-transform: lowercase;
+}
+
+.registrationForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px;
+}
+
+.registrationForm input {
+  background-color: #6c6c6c;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 10px;
 }
