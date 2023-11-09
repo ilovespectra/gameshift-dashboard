@@ -14,6 +14,14 @@ Lots of planned features coming, but barebones framework is available for your p
   - stylize
   - get feedback!
 
+## Run Locally
+
+- Head to [Gameshift](https://gameshift.solanalabs.com/) and click `Start Building` to get your Gameshift API key. 
+
+- Add it to your `.env.template` and rename to `.env.local`
+
+- Head to [Firebase](https://firebase.google.com/) to get started on a new project to receive your Firebase keys and add them to your `.env`
+
 ## Getting Started
 
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
