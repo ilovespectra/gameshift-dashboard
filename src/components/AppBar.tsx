@@ -22,7 +22,7 @@ export const AppBar: FC = props => {
           </label>
 
           <div className="hidden sm:inline w-22 h-22 md:p-2">
-          <Image src="/logo.png" alt="Logo" width={125} height={70} />
+          <Image src="/logo.png" alt="Logo" width={120} height={60} />
         </div>
         </div>
 
