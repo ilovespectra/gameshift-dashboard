@@ -1,18 +1,18 @@
-# solo: journal
+# Gameshift Dashboard
 
-this app is under construction. feedback highly encouraged.
+This app is under construction. Feedback highly encouraged.
 
-solo: journal is a private place to write. your entries are logged with your pubkey, which is used to filter the entries search function. this means only
-you can see the content you write. 
+Gameshift Dashboard gets new game developers over the hump by creating a useful hub where their players can register their wallet with a username and email, creating a user using the Gameshift API. 
 
-[solo: explorer](https://soloexplorer.vercel.app/) is under construction, and will
-enable trading notes and more. 
+The logic for your game can be directly embedded into this dashboard, where 'Create Asset' transactions are triggered based on points mechanisms within the game, awarding your players with tokens which can be used as currency in-game, or assets which can enhance player experience. 
+
+Lots of planned features coming, but barebones framework is available for your pleasure. Enjoy!
 
 # to-do
 
-  - complete explorer
-  - tie explorer to journal
-  - create-your-own journal template 
+  - add button functionality
+  - stylize
+  - get feedback!
 
 ## Getting Started
 
