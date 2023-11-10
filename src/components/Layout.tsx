@@ -1,69 +1,22 @@
-import { FC, ReactNode, useState, useCallback, useEffect } from "react";
-import { initializeApp } from "firebase/app";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { notify } from "../utils/notifications";
-import axios from "axios";
-import logToFirebase from "../components/logToFirebase";
-import { checkIfPublicKeyExistsInFirebase } from "./checkIfPublicKeyExistsInFirebase";
-import { getUsernameForPublicKey } from "./getUsernameForPublicKey";
+import { FC, useState, useEffect } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { notify } from '../utils/notifications';
+import axios from 'axios';
+import logToFirebase from '../components/logToFirebase';
+import { checkIfPublicKeyExistsInFirebase } from './checkIfPublicKeyExistsInFirebase';
+import { getUsernameForConnectedWallet } from './getUsernameForPublicKey';
+import getDocumentIdForPublicKey from './getDocumentIdForPublicKey';
 
-const Layout = ({ children }) => {
+export const Layout: FC = ({ children }) => {
   const { publicKey } = useWallet();
   const isWalletConnected = !!publicKey;
 
   const [isRegistered, setIsRegistered] = useState(false);
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-
-  // Fetch the username only if wallet is connected and registered
-  useEffect(() => {
-    const fetchUsername = async () => {
-      if (isWalletConnected && isRegistered) {
-        // Check if the public key is registered and retrieve the associated username
-        const fetchedUsername = await getUsernameForPublicKey(publicKey.toBase58());
-    
-        if (fetchedUsername) {
-          setUsername(fetchedUsername);
-        }
-      }
-    };
-
-    fetchUsername();
-  }, [isWalletConnected, isRegistered, publicKey]);
-
-  useEffect(() => {
-    const checkRegistration = async () => {
-      if (isWalletConnected) {
-        // Check if the publicKey exists in Firebase
-        const publicKeyExistsInFirebase = await checkIfPublicKeyExistsInFirebase(publicKey.toBase58());
-
-        if (publicKeyExistsInFirebase) {
-          // If the public key is registered, set isRegistered to true
-          setIsRegistered(true);
-
-          // Fetch the username associated with the publicKey from Firebase
-          const fetchedUsername = await getUsernameForPublicKey(publicKey.toBase58());
-          
-          if (fetchedUsername) {
-            setUsername(fetchedUsername);
-          }
-        } else {
-          // If the public key is not registered, set isRegistered to false
-          setIsRegistered(false);
-        }
-      }
-    };
-
-    checkRegistration();
-  }, [isWalletConnected, publicKey]);
-
-  const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setUsername(event.target.value);
-  };
-
-  const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(event.target.value);
-  };
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [newUsername, setNewUsername] = useState('');
 
   const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -76,18 +29,44 @@ const Layout = ({ children }) => {
   };
 
   const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-  const onClick = useCallback(async () => {
-    if (!isWalletConnected) {
-      console.error("Wallet not connected!");
-      notify({
-        type: "error",
-        message: "Error",
-        description: "Wallet not connected!",
-      });
-      return;
-    }
-  }, [isWalletConnected]);
+  const [isUpdateSectionVisible, setIsUpdateSectionVisible] = useState(false);
+
+  useEffect(() => {
+    const checkRegistration = async () => {
+      if (isWalletConnected) {
+        const publicKeyExistsInFirebase = await checkIfPublicKeyExistsInFirebase(publicKey.toBase58());
+    
+        if (publicKeyExistsInFirebase) {
+          // Log the document ID associated with the public key
+          const userDocId = await getDocumentIdForPublicKey(publicKey.toBase58());
+          console.log('Document ID for the connected wallet:', userDocId);
+    
+          setIsRegistered(true);
+    
+          try {
+            const fetchedUsername = await getUsernameForConnectedWallet(publicKey);
+    
+            if (fetchedUsername) {
+              setUsername(fetchedUsername);
+            } else {
+              console.log('Username not found for public key:', publicKey.toBase58());
+            }
+          } catch (error) {
+            console.error('Error fetching username:', error);
+          }
+        } else {
+          setIsRegistered(false);
+        }
+      }
+    };
+    checkRegistration();
+  }, [isWalletConnected, publicKey]);
+
+  const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(event.target.value);
+  };
 
   const handleRegistration = async () => {
     if (!isWalletConnected) {
@@ -99,14 +78,21 @@ const Layout = ({ children }) => {
       });
       return;
     }
-  
-    // Prepare the request data
-    const requestData = {
-      referenceId: username,
-      email,
-    };
-  
+    console.log('Before setUsername:', username);
+    setUsername('');
+    console.log('After setUsername:', username);
     try {
+      // Reset the username state to an empty string
+      setUsername('');
+  
+      const userRef = doc(db, 'users', username); // Use the username as the document ID
+  
+      // Prepare the request data
+      const requestData = {
+        referenceId: username,
+        email,
+      };
+  
       const response = await axios.post("https://api.gameshift.dev/users", requestData, {
         headers: {
           "X-Api-Key": process.env.NEXT_PUBLIC_GAMESHIFT_API_KEY,
@@ -119,12 +105,15 @@ const Layout = ({ children }) => {
   
         // Pass the individual values to the logToFirebase function
         logToFirebase(response.data.referenceId, response.data.email, publicKey?.toBase58(), response.data);
-        
+  
         // Update isRegistered to true after successful registration
         setIsRegistered(true);
   
         // Update the username state
         setUsername(response.data.referenceId);
+  
+        // Add the user data to Firestore using the username as the document ID
+        await setDoc(userRef, { username, publicKey: publicKey?.toBase58(), email });
       } else {
         console.error("Registration failed with status:", response.status);
         notify({
@@ -143,10 +132,79 @@ const Layout = ({ children }) => {
     }
   };
   
-
+  
   const handleComponentChange = (component: string) => {
     // Implement the logic to change the active component based on the "component" parameter
     // For example, set the activeComponent state.
+  };
+  const [tempNewUsername, setTempNewUsername] = useState('');
+  // const handleNewUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   const newUsernameValue = event.target.value;
+
+  //   setTempNewUsername(newUsernameValue);
+  // };
+  
+  const handleNewUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newUsernameValue = event.target.value;
+
+    // Update the newUsername state directly
+    setNewUsername(newUsernameValue);
+  };
+
+  const handleUpdateUsername = async () => {
+    console.log('handleUpdateUsername function called');
+  
+    if (!isWalletConnected) {
+      console.error('Wallet not connected!');
+      notify({ type: 'error', message: 'Error', description: 'Wallet not connected!' });
+      return;
+    }
+  
+    try {
+      // Use the dynamically fetched document ID
+      const documentId = await getDocumentIdForPublicKey(publicKey.toBase58());
+      const userRef = doc(db, 'users', documentId);
+  
+      // Check if the user exists
+      const userDoc = await getDoc(userRef);
+  
+      console.log('User Reference:', userRef);
+      console.log('User Document:', userDoc);
+  
+      if (userDoc.exists()) {
+        // Fetch the existing username associated with the user
+        const currentUsername = userDoc.data().username;
+        console.log('Current Username:', currentUsername);
+  
+        console.log('Updating username to:', newUsername);
+        // Update the username with the new value (newUsername)
+        await updateDoc(userRef, { username: newUsername });
+  
+        // Fetch and display the updated user information
+        const updatedUserDoc = await getDoc(userRef);
+  
+        if (updatedUserDoc.exists()) {
+          // Update the local state with the new username
+          const updatedUsername = updatedUserDoc.data().username;
+          setUsername(updatedUsername);
+  
+          // Notify the user of the successful update
+          notify({ type: 'success', message: 'Success', description: 'Username updated successfully!' });
+  
+          // Set isUpdateSectionVisible to false to cancel the update
+          setIsUpdateSectionVisible(false);
+        } else {
+          console.error('Updated user not found.');
+          notify({ type: 'error', message: 'Error', description: 'Updated user not found.' });
+        }
+      } else {
+        console.error('User not found.');
+        notify({ type: 'error', message: 'Error', description: 'User not found.' });
+      }
+    } catch (error) {
+      console.error('Error updating username:', error);
+      notify({ type: 'error', message: 'Error', description: 'Error updating username.' + error.message });
+    }
   };
 
   return (
@@ -157,46 +215,87 @@ const Layout = ({ children }) => {
         </h4>
 
         <div>
-        {isWalletConnected ? (
-          isRegistered ? (
-            <div>
-              <p>
-                <i>Welcome, {username}!</i>
-              </p>
-              <p>Connected with <i>{publicKey?.toBase58().substring(0, 5)}...</i></p>
-            </div>
-          ) : (
-            <div className="registrationForm">
+          {isWalletConnected ? (
+            isRegistered ? (
+              <div>
+                
+              </div>
+            ) : (
+              <div className="registrationForm">
               <input
                 type="text"
                 placeholder="Username"
                 value={username}
-                onChange={handleUsernameChange}
-                autoComplete="off" // Disable auto-fill
+                onChange={handleNewUsernameChange}
+                autoComplete="off"
               />
-              <input
-                type="text"
-                placeholder="Email"
-                value={email}
-                onChange={handleEmailChange}
-                autoComplete="off" // Disable auto-fill
-              />
-              <button onClick={handleRegistration}>Register</button>
-            </div>
-          )
-        ) : (
-          null // If the wallet is not connected, display nothing (no buttons)
-        )}
-      </div>
+
+                <input
+                  type="text"
+                  placeholder="Email"
+                  value={email}
+                  onChange={handleEmailChange}
+                  autoComplete="off" 
+                />
+                <button onClick={handleRegistration}>Register</button>
+              </div>
+            )
+          ) : (
+            null // If the wallet is not connected, display nothing (no buttons)
+          )}
+        </div>
 
         {isWalletConnected && isRegistered && (
           <div className="text-center">
-          <button
-            onClick={() => handleComponentChange("asset")}
-            className="group w-30 m-2 btn disabled:animate-none"
-          >
-            Create Asset
-          </button>
+  <div className="registrationForm">
+    <p style={{ fontSize: '1.5rem' }}>
+      <i>Welcome, {username}!</i>
+    </p>
+    <button
+      onClick={() => setIsUpdateSectionVisible(!isUpdateSectionVisible)}
+      style={{
+        fontSize: isUpdateSectionVisible ? '0.8rem' : '0.8rem',
+        color: 'purple',
+        background: 'none',
+        border: 'none',
+        marginBottom: '5px',
+        cursor: 'pointer',
+      }}
+    >
+      {isUpdateSectionVisible ? "Cancel Update" : "Update Username"}
+    </button>
+    {isUpdateSectionVisible && (
+      <div className="update-username-form">
+        <input
+          type="text"
+          placeholder="New Username"
+          value={newUsername}
+          onChange={handleNewUsernameChange}
+          autoComplete="off"
+        />
+        <button
+          style={{
+            background: 'linear-gradient(to right, #4CAF50, #4B0082)',
+            color: 'white',
+            marginLeft: '10px',
+            borderRadius: '15px',
+            border: 'none',
+            padding: '8px 16px',
+            cursor: 'pointer',
+          }}
+          onClick={handleUpdateUsername}
+        >
+          Update Username
+        </button>
+     </div>
+      )}
+    </div>
+    <button
+      onClick={() => handleComponentChange("asset")}
+      className="group w-30 m-2 btn disabled:animate-none"
+    >
+      Create Asset
+    </button>
           <button
             onClick={() => handleComponentChange("transfer")}
             className="group w-30 m-2 btn disabled:animate-none"
