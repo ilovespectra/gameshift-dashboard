@@ -1,7 +1,7 @@
 import React, { useState, FormEvent } from 'react';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { app } from './firebase';
+import { firebaseApp } from './firebase';
 
 const Login: React.FC = () => {
   const [isSuccessMessageVisible, setSuccessMessageVisible] = useState(false);
@@ -9,7 +9,7 @@ const Login: React.FC = () => {
     username: '',
     email: '',
   });
-  const db = getFirestore(app);
+  const db = getFirestore(firebaseApp);
   const { publicKey } = useWallet();
   const apiKey = process.env.NEXT_PUBLIC_GAMESHIFT_API_DEV_KEY; // Set the Gameshift API key from environment variables
 
@@ -24,7 +24,7 @@ const Login: React.FC = () => {
 
     try {
       // Use getFirestore to obtain a Firestore instance
-      const db = getFirestore(app);
+      const db = getFirestore(firebaseApp);
       const loginEntriesRef = collection(db, 'LoginEntries'); // Correct collection name
       await addDoc(loginEntriesRef, {
         username,
