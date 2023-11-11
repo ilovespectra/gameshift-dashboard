@@ -251,9 +251,8 @@ export const Layout: FC = ({ children }) => {
     <button
       onClick={() => setIsUpdateSectionVisible(!isUpdateSectionVisible)}
       style={{
-        fontSize: isUpdateSectionVisible ? '0.8rem' : '1rem',
+        fontSize: isUpdateSectionVisible ? '0.8rem' : '0.8rem',
         color: 'purple',
-        textDecoration: 'underline',
         background: 'none',
         border: 'none',
         marginBottom: '5px',
