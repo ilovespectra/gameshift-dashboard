@@ -1,7 +1,7 @@
-import React from 'react';
+// ./firebase.ts
+
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { FirebaseProvider } from './FirebaseContext';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,8 +12,8 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
-  
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
 
-export { app };
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+export { app as firebaseApp, db as firestoreDB, firebaseConfig };
