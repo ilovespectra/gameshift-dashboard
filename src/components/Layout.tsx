@@ -8,6 +8,8 @@ import logToFirebase from '../components/logToFirebase';
 import { checkIfPublicKeyExistsInFirebase } from './checkIfPublicKeyExistsInFirebase';
 import { getUsernameForConnectedWallet } from './getUsernameForPublicKey';
 import getDocumentIdForPublicKey from './getDocumentIdForPublicKey';
+import Points from './Points';
+import ViewInventory from './ViewInventory';
 
 export const Layout: FC = ({ children }) => {
   const { publicKey } = useWallet();
@@ -18,6 +20,7 @@ export const Layout: FC = ({ children }) => {
   const [email, setEmail] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const [inputUsername, setInputUsername] = useState(newUsername);
+  const [gameActive, setGameActive] = useState(false);
 
   const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -34,8 +37,28 @@ export const Layout: FC = ({ children }) => {
 
   const [isUpdateSectionVisible, setIsUpdateSectionVisible] = useState(false);
   
+  const handleStartGame = () => {
+    // Implement the logic for starting the game
+    setGameActive(true);
+  };
+
+  const handleGameEnd = (points: number) => {
+    // Implement the logic for ending the game
+    setGameActive(false);
+    // Do something with the points, e.g., log them or display a message
+    console.log('Game ended with points:', points);
+  };
+
   useEffect(() => {
+
     const checkRegistration = async () => {
+      const publicKeyString = publicKey?.toBase58() || '';
+
+      // Use publicKeyString instead of publicKey.toBase58() in the following calls
+      const publicKeyExistsInFirebase = await checkIfPublicKeyExistsInFirebase(publicKeyString);
+      const userDocId = await getDocumentIdForPublicKey(publicKeyString);
+      const fetchedUsername = await getUsernameForConnectedWallet(publicKey?.toBase58() || '');
+
       if (isWalletConnected) {
         const publicKeyExistsInFirebase = await checkIfPublicKeyExistsInFirebase(publicKey.toBase58());
         
@@ -47,8 +70,8 @@ export const Layout: FC = ({ children }) => {
           setIsRegistered(true);
     
           try {
-            const fetchedUsername = await getUsernameForConnectedWallet(publicKey);
-    
+            const fetchedUsername = await getUsernameForConnectedWallet(publicKey?.toBase58() || '');
+
             if (fetchedUsername) {
               setUsername(fetchedUsername);
             } else {
@@ -131,6 +154,7 @@ export const Layout: FC = ({ children }) => {
     }
   };
 
+  
   const handleComponentChange = (component: string) => {
     // Implement the logic to change the active component based on the "component" parameter
     // For example, set the activeComponent state.
@@ -158,8 +182,10 @@ export const Layout: FC = ({ children }) => {
     }
   
     try {
+      const publicKeyString = publicKey?.toBase58() || '';
+  
       // Use the dynamically fetched document ID
-      const documentId = await getDocumentIdForPublicKey(publicKey.toBase58());
+      const documentId = await getDocumentIdForPublicKey(publicKeyString);
       const userRef = doc(db, 'users', documentId);
   
       // Check if the user exists
@@ -175,7 +201,7 @@ export const Layout: FC = ({ children }) => {
   
         console.log('Updating username to:', inputUsername);
         // Update the username with the new value (inputUsername)
-        await updateDoc(userRef, { username: inputUsername });
+        await updateDoc(userRef, { username: inputUsername, referenceId: inputUsername });
   
         // Fetch and display the updated user information
         const updatedUserDoc = await getDoc(userRef);
@@ -204,119 +230,127 @@ export const Layout: FC = ({ children }) => {
     }
   };
   
+  
   return (
     <div className="md:hero mx-auto p-4">
       <div className="md:hero-content flex flex-col">
         <h4 className="md:w-full text-center text-slate-300 my-2">
           <h1>Gameshift Dashboard</h1>
         </h4>
-
-        <div>
-          {isWalletConnected ? (
-            isRegistered ? (
-              <div>
-                
-              </div>
-            ) : (
-              <div className="registrationForm">
-              <input
-                type="text"
-                placeholder="Username"
-                value={inputUsername}
-                onChange={handleNewUsernameChange}
-                autoComplete="off"
-              />
-
-                <input
-                  type="text"
-                  placeholder="Email"
-                  value={email}
-                  onChange={handleEmailChange}
-                  autoComplete="off" 
-                />
-                <button onClick={handleRegistration}>Register</button>
-              </div>
-            )
-          ) : (
-            null // If the wallet is not connected, display nothing (no buttons)
-          )}
-        </div>
-
-        {isWalletConnected && isRegistered && (
+  
+        {isWalletConnected && !isRegistered && (
+          <div className="registrationForm">
+            <input
+              type="text"
+              placeholder="Username"
+              value={inputUsername}
+              onChange={handleNewUsernameChange}
+              autoComplete="off"
+            />
+            <input
+              type="text"
+              placeholder="Email"
+              value={email}
+              onChange={handleEmailChange}
+              autoComplete="off"
+            />
+            <button onClick={handleRegistration}>Register</button>
+          </div>
+        )}
+  
+        {isWalletConnected && isRegistered && !gameActive && (
           <div className="text-center">
-  <div className="registrationForm">
-    <p style={{ fontSize: '1.5rem' }}>
-      <i>Welcome, {username}!</i>
-    </p>
-    <button
-      onClick={() => setIsUpdateSectionVisible(!isUpdateSectionVisible)}
-      style={{
-        fontSize: isUpdateSectionVisible ? '0.8rem' : '0.8rem',
-        color: 'purple',
-        background: 'none',
-        border: 'none',
-        marginBottom: '5px',
-        cursor: 'pointer',
-      }}
-    >
-      {isUpdateSectionVisible ? "Cancel Update" : "Update Username"}
-    </button>
-    {isUpdateSectionVisible && (
-      <div className="update-username-form">
-        <input
-          type="text"
-          placeholder="Username"
-          value={inputUsername}
-          onChange={handleNewUsernameChange}
-          autoComplete="off"
-        />
-        <button
-          style={{
-            fontSize: '0.8rem',
-            background: 'linear-gradient(to right, #4CAF50, #4B0082)',
-            color: 'white',
-            marginLeft: '10px',
-            borderRadius: '15px',
-            border: 'none',
-            padding: '8px 16px',
-            cursor: 'pointer',
-          }}
-          onClick={handleUpdateUsername}
-        >
-          Update Username
-        </button>
-     </div>
-      )}
-    </div>
-    <button
-      onClick={() => handleComponentChange("asset")}
-      className="group w-30 m-2 btn disabled:animate-none"
-    >
-      Create Asset
-    </button>
-          <button
-            onClick={() => handleComponentChange("transfer")}
-            className="group w-30 m-2 btn disabled:animate-none"
-          >
-            Transfer Asset
-          </button>
-          <button
-            onClick={() => handleComponentChange("payment")}
-            className="group w-30 m-2 btn disabled:animate-none"
-          >
-            Payment
-          </button>
-          <button
-            onClick={() => handleComponentChange("view")}
-            className="group w-30 m-2 btn disabled:animate-none"
-          >
-            View Inventory
-          </button>
-        </div>
+            <div className="registrationForm">
+              <p style={{ fontSize: '1.5rem' }}>
+                <i>Welcome, {username}!</i>
+              </p>
+              <button
+                onClick={() => setIsUpdateSectionVisible(!isUpdateSectionVisible)}
+                style={{
+                  fontSize: '0.8rem',
+                  color: 'purple',
+                  textDecoration: 'underline',
+                  background: 'none',
+                  border: 'none',
+                  marginBottom: '5px',
+                  cursor: 'pointer',
+                }}
+              >
+                {isUpdateSectionVisible ? "Cancel Update" : "Update Username"}
+              </button>
+              {isUpdateSectionVisible && (
+                <div className="update-username-form">
+                  <input
+                    type="text"
+                    placeholder="Username"
+                    value={inputUsername}
+                    onChange={handleNewUsernameChange}
+                    autoComplete="off"
+                  />
+                  <button
+                    style={{
+                      fontSize: '0.8rem',
+                      background: 'linear-gradient(to right, #4CAF50, #4B0082)',
+                      color: 'white',
+                      marginLeft: '10px',
+                      borderRadius: '15px',
+                      border: 'none',
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                    }}
+                    onClick={handleUpdateUsername}
+                  >
+                    Update Username
+                  </button>
+                </div>
+              )}
+            </div>
+            <button onClick={handleStartGame}>Start Points Game</button>
+          </div>
+        )}
+  
+        {gameActive && (
+                <div>
+                  {/* Provide the onGameEnd prop when using the Points component */}
+                  <Points onGameEnd={handleGameEnd} />
+                </div>
+              )}
+  
+        {isWalletConnected && isRegistered && !gameActive && (
+          <div className="text-center">
+            {/* <button
+              onClick={() => handleComponentChange("asset")}
+              className="group w-30 m-2 btn disabled:animate-none"
+            >
+              Create Asset
+            </button>
+            <button
+              onClick={() => handleComponentChange("transfer")}
+              className="group w-30 m-2 btn disabled:animate-none"
+            >
+              Transfer Asset
+            </button>
+            <button
+              onClick={() => handleComponentChange("payment")}
+              className="group w-30 m-2 btn disabled:animate-none"
+            >
+              Payment
+            </button>
+            <button
+              onClick={() => handleComponentChange("view")}
+              className="group w-30 m-2 btn disabled:animate-none"
+            >
+              View Inventory
+            </button> */}
+            <div className="inventory-container">
+              <ViewInventory />
+            </div>
+          </div>
+     
         )}
       </div>
     </div>
   );
-};
+}  
 
 export default Layout;
