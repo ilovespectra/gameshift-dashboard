@@ -17,6 +17,7 @@ export const Layout: FC = ({ children }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [newUsername, setNewUsername] = useState('');
+  const [inputUsername, setInputUsername] = useState(newUsername);
 
   const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -32,12 +33,12 @@ export const Layout: FC = ({ children }) => {
   const db = getFirestore(app);
 
   const [isUpdateSectionVisible, setIsUpdateSectionVisible] = useState(false);
-
+  
   useEffect(() => {
     const checkRegistration = async () => {
       if (isWalletConnected) {
         const publicKeyExistsInFirebase = await checkIfPublicKeyExistsInFirebase(publicKey.toBase58());
-    
+        
         if (publicKeyExistsInFirebase) {
           // Log the document ID associated with the public key
           const userDocId = await getDocumentIdForPublicKey(publicKey.toBase58());
@@ -67,7 +68,7 @@ export const Layout: FC = ({ children }) => {
   const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(event.target.value);
   };
-
+  
   const handleRegistration = async () => {
     if (!isWalletConnected) {
       console.error("Wallet not connected!");
@@ -78,42 +79,40 @@ export const Layout: FC = ({ children }) => {
       });
       return;
     }
-    console.log('Before setUsername:', username);
-    setUsername('');
-    console.log('After setUsername:', username);
+    setNewUsername('');
     try {
-      // Reset the username state to an empty string
-      setUsername('');
+      // Reset the inputUsername state to an empty string
+      setInputUsername('');
   
-      const userRef = doc(db, 'users', username); // Use the username as the document ID
-  
+      const userRef = doc(db, 'users', inputUsername);// Use the newUsername as the document ID
+
       // Prepare the request data
       const requestData = {
-        referenceId: username,
+        referenceId: inputUsername,
         email,
       };
-  
+
       const response = await axios.post("https://api.gameshift.dev/users", requestData, {
         headers: {
           "X-Api-Key": process.env.NEXT_PUBLIC_GAMESHIFT_API_KEY,
         },
       });
-  
+      
       if (response.status === 201) {
         console.log("Registration successful");
         console.log("Registered data:", response.data);
-  
+
         // Pass the individual values to the logToFirebase function
         logToFirebase(response.data.referenceId, response.data.email, publicKey?.toBase58(), response.data);
-  
+
         // Update isRegistered to true after successful registration
         setIsRegistered(true);
-  
+
         // Update the username state
         setUsername(response.data.referenceId);
-  
-        // Add the user data to Firestore using the username as the document ID
-        await setDoc(userRef, { username, publicKey: publicKey?.toBase58(), email });
+
+        // Add the user data to Firestore using the inputUsername as the document ID
+        await setDoc(userRef, { username: inputUsername, publicKey: publicKey?.toBase58(), email });
       } else {
         console.error("Registration failed with status:", response.status);
         notify({
@@ -131,8 +130,7 @@ export const Layout: FC = ({ children }) => {
       });
     }
   };
-  
-  
+
   const handleComponentChange = (component: string) => {
     // Implement the logic to change the active component based on the "component" parameter
     // For example, set the activeComponent state.
@@ -143,14 +141,13 @@ export const Layout: FC = ({ children }) => {
 
   //   setTempNewUsername(newUsernameValue);
   // };
-  
+
   const handleNewUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newUsernameValue = event.target.value;
-
-    // Update the newUsername state directly
-    setNewUsername(newUsernameValue);
+  
+    // Update the inputUsername state directly
+    setInputUsername(newUsernameValue);
   };
-
   const handleUpdateUsername = async () => {
     console.log('handleUpdateUsername function called');
   
@@ -173,19 +170,19 @@ export const Layout: FC = ({ children }) => {
   
       if (userDoc.exists()) {
         // Fetch the existing username associated with the user
-        const currentUsername = userDoc.data().username;
+        const currentUsername = userDoc.data()?.username || ''; // Use the optional chaining operator to handle undefined
         console.log('Current Username:', currentUsername);
   
-        console.log('Updating username to:', newUsername);
-        // Update the username with the new value (newUsername)
-        await updateDoc(userRef, { username: newUsername });
+        console.log('Updating username to:', inputUsername);
+        // Update the username with the new value (inputUsername)
+        await updateDoc(userRef, { username: inputUsername });
   
         // Fetch and display the updated user information
         const updatedUserDoc = await getDoc(userRef);
   
         if (updatedUserDoc.exists()) {
           // Update the local state with the new username
-          const updatedUsername = updatedUserDoc.data().username;
+          const updatedUsername = updatedUserDoc.data()?.username || '';
           setUsername(updatedUsername);
   
           // Notify the user of the successful update
@@ -206,7 +203,7 @@ export const Layout: FC = ({ children }) => {
       notify({ type: 'error', message: 'Error', description: 'Error updating username.' + error.message });
     }
   };
-
+  
   return (
     <div className="md:hero mx-auto p-4">
       <div className="md:hero-content flex flex-col">
@@ -225,7 +222,7 @@ export const Layout: FC = ({ children }) => {
               <input
                 type="text"
                 placeholder="Username"
-                value={username}
+                value={inputUsername}
                 onChange={handleNewUsernameChange}
                 autoComplete="off"
               />
@@ -254,8 +251,9 @@ export const Layout: FC = ({ children }) => {
     <button
       onClick={() => setIsUpdateSectionVisible(!isUpdateSectionVisible)}
       style={{
-        fontSize: isUpdateSectionVisible ? '0.8rem' : '0.8rem',
+        fontSize: isUpdateSectionVisible ? '0.8rem' : '1rem',
         color: 'purple',
+        textDecoration: 'underline',
         background: 'none',
         border: 'none',
         marginBottom: '5px',
@@ -268,13 +266,14 @@ export const Layout: FC = ({ children }) => {
       <div className="update-username-form">
         <input
           type="text"
-          placeholder="New Username"
-          value={newUsername}
+          placeholder="Username"
+          value={inputUsername}
           onChange={handleNewUsernameChange}
           autoComplete="off"
         />
         <button
           style={{
+            fontSize: '0.8rem',
             background: 'linear-gradient(to right, #4CAF50, #4B0082)',
             color: 'white',
             marginLeft: '10px',
@@ -320,6 +319,5 @@ export const Layout: FC = ({ children }) => {
     </div>
   );
 };
-
 
 export default Layout;
