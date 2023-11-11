@@ -5,8 +5,8 @@ import { ContextProvider } from '../contexts/ContextProvider';
 import { AppBar } from '../components/AppBar';
 import { ContentContainer } from '../components/ContentContainer';
 import { Footer } from '../components/Footer';
-import Notifications from '../components/Notification';
-import Layout from "components/Layout";
+import Notifications from '../components/Notification'
+import { Layout } from 'components/Layout';
 
 require('@solana/wallet-adapter-react-ui/styles.css');
 require('../styles/globals.css');
@@ -18,7 +18,7 @@ const App: FC<AppProps> = ({ Component, pageProps }) => {
         <title>Gameshift Dashboard</title>
         <meta
           name="description"
-          content="Making easy simpler"
+          content="Making Easy Simpler"
         />
       </Head>
 

@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { WalletContextState, useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -15,15 +16,19 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export const getUsernameForConnectedWallet = async (publicKey: WalletContextState['publicKey']) => {
+export const getUsernameForConnectedWallet = async (publicKey: string) => {
   try {
+    // Check if publicKey is defined
     if (!publicKey) {
       console.error('Wallet not connected!');
       return null;
     }
 
+    // Convert the string to PublicKey
+    const walletPublicKey = new PublicKey(publicKey);
+
     const usersCollection = collection(db, 'users');
-    const q = query(usersCollection, where('publicKey', '==', publicKey.toBase58()));
+    const q = query(usersCollection, where('publicKey', '==', walletPublicKey.toBase58()));
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
@@ -36,3 +41,4 @@ export const getUsernameForConnectedWallet = async (publicKey: WalletContextStat
 
   return null; // Return null if no username is found
 };
+
