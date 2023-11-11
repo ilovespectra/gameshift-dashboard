@@ -15,10 +15,10 @@ const App: FC<AppProps> = ({ Component, pageProps }) => {
   return (
     <>
       <Head>
-        <title>solo: journal</title>
+        <title>Gameshift Dashboard</title>
         <meta
           name="description"
-          content="the jounral you won't lose when you move"
+          content="Making easy simpler"
         />
       </Head>
 
