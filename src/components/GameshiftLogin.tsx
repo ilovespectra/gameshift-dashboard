@@ -1,7 +1,8 @@
 import React, { useState, FormEvent } from 'react';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { useWallet } from '@solana/wallet-adapter-react';
 import { firebaseApp } from './firebase';
+import { useWallet } from '@solana/wallet-adapter-react';
+
 
 const Login: React.FC = () => {
   const [isSuccessMessageVisible, setSuccessMessageVisible] = useState(false);
