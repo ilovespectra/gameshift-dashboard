@@ -25,12 +25,12 @@ export const ContentContainer: FC = (props) => {
             <a onClick={handleHomeLinkClick}>Home</a>
           </li>
           <li>
-            <Link href="https://github.com/ilovespectra/solo">
+            <Link href="https://github.com/ilovespectra/gameshift-dashboard">
               <a target="_blank" rel="noopener noreferrer">GitHub</a>
             </Link>
           </li>
           <li>
-            <Link href="https://www.solarplex.xyz/profile/solo.live.solarplex.xyz">
+            <Link href="https://www.solarplex.xyz/profile/tanny.live.solarplex.xyz">
               <a target="_blank" rel="noopener noreferrer">Solarplex</a>
             </Link>
           </li>
