@@ -26,8 +26,8 @@ const Points: React.FC<{ onGameEnd: (points: number) => void }> = ({ onGameEnd }
         try {
           // Fetch all users from Firestore database
           const users = await fetchFirestoreUsers();
-          console.log('Firestore Users:', users);
           setAllUsers(users);
+
         } catch (error) {
           console.error('Error fetching users from Firestore:', error);
           // Handle error as needed
@@ -57,7 +57,6 @@ const Points: React.FC<{ onGameEnd: (points: number) => void }> = ({ onGameEnd }
         return { ...userData, referenceId };
       });
   
-      console.log('Fetched Users from Firestore:', users);
       return users;
     } catch (error) {
       console.error('Error fetching users from Firestore:', error);
@@ -143,8 +142,6 @@ Content-Length: ${JSON.stringify(requestData).length}
 
 ${JSON.stringify(requestData, null, 2)}
 `;
-
-        console.log('Verbatim HTML Request:', htmlRequest);
 
         // Make the API call
         const response = await axios.post('https://api.gameshift.dev/assets', requestData, {
